@@ -30,6 +30,7 @@ struct Note
 //     {185.00,    4}      // F#3
 // };
 
+// song to test if right notes are playing
 Note song[] = {
     {440.00,    40},     // D3
     {185.00,    40},     // F#3
