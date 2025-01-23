@@ -23,11 +23,18 @@ struct Note
 
 // A song is simply defined as an array of note.
 // It assumes notes are played in order (no polyphony).
+// Note song[] = {
+//     {164.81,    4},     // D3
+//     {185.00,    4},     // F#3
+//     {220.00,    4},     // A4
+//     {185.00,    4}      // F#3
+// };
+
 Note song[] = {
-    {164.81,    4},     // D3
-    {185.00,    4},     // F#3
-    {220.00,    4},     // A4
-    {185.00,    4}      // F#3
+    {440.00,    40},     // D3
+    {185.00,    40},     // F#3
+    {440.00,    40},     // A4
+    {185.00,    40}      // F#3
 };
 
 // Note frequency reference

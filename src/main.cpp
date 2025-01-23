@@ -3,7 +3,7 @@
 #include <Oscil.h>
 #include <tables/saw2048_int8.h>
 #include <tables/square_no_alias_2048_int8.h>
-
+#include "song.hpp"
 #include "pcm_audio.hpp"
 
 /*
@@ -59,6 +59,9 @@ void TaskBufferManip(void *pvParameters);
 
 void ButtonSW1Task(void *pvParameters);
 void ButtonSW2Task(void *pvParameters);
+
+void TaskPlaySong(void *pvParameters);
+
 /* ***************** END DEFINE TASK FUNCTION ********************* */
 
 void setNoteHz(float note)
@@ -114,7 +117,7 @@ void setup()
     // Oscillator.
     squarewv_ = SquareWv(SQUARE_NO_ALIAS_2048_DATA);
     sawtooth_ = SquareWv(SAW2048_DATA);
-    setNoteHz(440.0);
+    // setNoteHz(440.0); for test
 
     pcmSetup();
 
@@ -128,6 +131,15 @@ void setup()
         ,  NULL//pas de param envoyé
         ,  0  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  NULL );
+    
+/*------------------------- SONG SETUP -------------------------*/   
+    xTaskCreate(
+    TaskPlaySong
+    ,  "Setting_Notes_To_Play"   // A name just for humans
+    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
+    ,  NULL
+    ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+    ,  NULL );
 
 /*------------------------- BUTTON SETUP -------------------------*/
     xTaskCreate(
@@ -183,6 +195,32 @@ void toggleVarSW2()
 /*--------------------------------------------------*/
 /*---------------------- Tasks ---------------------*/
 /*--------------------------------------------------*/
+
+// 
+void TaskPlaySong(void *pvParameters)
+{
+  //Find array size
+  int arraySize = sizeof(song) / sizeof(song[0]);
+  Serial.println(arraySize);
+
+  while(1){
+    // Incrément en fonction de la grandeur du array
+    for(int i=0; i<arraySize ;i++)
+    {
+      Serial.print("Iteration: ");
+      Serial.print(i);
+      Serial.print("Setting note: ");
+      Serial.println(song[i].freq);
+      setNoteHz(song[i].freq);
+      //Delais avant prochaine note
+      vTaskDelay( (song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
+
+    }
+  }
+  
+
+}
+
 void TaskBlink(void *pvParameters) {
     // Cast the argument to the correct type
     TaskParams *params = (TaskParams *)pvParameters;
