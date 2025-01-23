@@ -41,10 +41,14 @@ float fb = (q + (q/(1.0-f)));
 int16_t b1 = f*f * 256;
 int16_t a1 = (2-2*f+f*fb-f*f*fb) * 256;
 int16_t a2 = -(1-2*f+f*fb+f*f-f*f*fb) * 256;
+
+//Variable d'état de chanson
+
 /* ******************* DEFINE ISR FUNCTION & VARIABLE *********************** */
 // Task handle for the task to be notified
 TaskHandle_t xButtonSW1TaskHandle = NULL;
 TaskHandle_t xButtonSW2TaskHandle = NULL;
+TaskHandle_t xPlaySongTaskHandle = NULL;
 
 void toggleVarSW1();
 void toggleVarSW2();
@@ -60,10 +64,11 @@ void TaskBlink( void *pvParameters );
 
 void TaskBufferManip(void *pvParameters);
 
+void NoButtonPressedTask(void *pvParameters);
 void ButtonSW1Task(void *pvParameters);
 void ButtonSW2Task(void *pvParameters);
 
-void TaskPlaySong(void *pvParameters);
+void PlaySongTask(void *pvParameters);
 
 // Mutex handle
 SemaphoreHandle_t MutexPotentiometer;
@@ -148,12 +153,13 @@ void setup()
     
 /*------------------------- SONG SETUP -------------------------*/   
     xTaskCreate(
-    TaskPlaySong
+    PlaySongTask
     ,  "Setting_Notes_To_Play"   // A name just for humans
     ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
     ,  NULL
     ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-    ,  NULL );
+    ,  &xPlaySongTaskHandle // Notification from SW2
+    );
 
 /*------------------------- BUTTON SETUP -------------------------*/
     xTaskCreate(
@@ -173,7 +179,8 @@ void setup()
     // Attach the ISR to SW1
     attachInterrupt(digitalPinToInterrupt(PIN_SW1), toggleVarSW1, RISING);
     // Attach the ISR to SW2
-    attachInterrupt(digitalPinToInterrupt(PIN_SW2), toggleVarSW2, FALLING);
+    attachInterrupt(digitalPinToInterrupt(PIN_SW2), toggleVarSW2, RISING); 
+
 
 /*------------------------- POTENTIOMETER SETUP -------------------------*/
     xTaskCreate(
@@ -220,28 +227,36 @@ void toggleVarSW2()
 /*--------------------------------------------------*/
 
 // 
-void TaskPlaySong(void *pvParameters)
+void PlaySongTask(void *pvParameters)
 {
-  //Find array size
-  int arraySize = sizeof(song) / sizeof(song[0]);
-  Serial.println(arraySize);
+    //Find array size
+    int arraySize = sizeof(song) / sizeof(song[0]);
+    Serial.println(arraySize);
 
-  while(1){
-    // Incrément en fonction de la grandeur du array
-    for(int i=0; i<arraySize ;i++)
+    for(;;)
     {
-      Serial.print("Iteration: ");
-      Serial.print(i);
-      Serial.print("Setting note: ");
-      Serial.println(song[i].freq);
-      setNoteHz(song[i].freq);
-      //Delais avant prochaine note
-      vTaskDelay( (song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
+        //Wait until notified
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
+        while(PIN_SW2){
+            // Incrément en fonction de la grandeur du array
+            for(int i=0; i<arraySize; i++)
+            {
+                if (digitalRead(PIN_SW2) == LOW){
+                    break;
+                }
+
+                Serial.print("Iteration: ");
+                Serial.print(i);
+                Serial.print("Setting note: ");
+                Serial.println(song[i].freq);
+                setNoteHz(song[i].freq);
+                //Delais avant prochaine note
+                vTaskDelay( (song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
+
+            }
+        }
     }
-  }
-  
-
 }
 
 void TaskBlink(void *pvParameters) {
@@ -285,12 +300,23 @@ void TaskBufferManip(void *pvParameters) {
     }
 }
 
+void NoButtonPressedTask(void *pvParameters){
+    for(;;){
+        //Check si aucune action si oui on joue pas de musique
+        if ( (digitalRead(PIN_SW1) == LOW) & (digitalRead(PIN_SW2) == LOW) )
+        {
+            setNoteHz(0);
+        }
+
+    }
+
+}
+
 void ButtonSW1Task(void *pvParameters)
 {
     for (;;)
     {
         // Wait for the notification (button press)
-        setNoteHz(0.0);
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         while(digitalRead(PIN_SW1) == HIGH)
         {
@@ -310,11 +336,18 @@ void ButtonSW2Task(void *pvParameters)
         // Wait for the notification (button press)
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        // Handle the button press (e.g., toggle an LED)
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        // Optional: Add debounce delay
+        //Play music as the button is pressed
+        while(digitalRead(PIN_SW2) == HIGH)
+        {
+            //Notify the play song Task
+            xTaskNotifyGive(xPlaySongTaskHandle);
+        }
+            
+        //Stop song
+    
+
+        // Debounce delay
         vTaskDelay(pdMS_TO_TICKS(50));
-        Serial.println("SW2 has been pressed!");
     }
 }
 
