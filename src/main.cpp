@@ -68,7 +68,7 @@ void NoButtonPressedTask(void *pvParameters);
 void ButtonSW1Task(void *pvParameters);
 void ButtonSW2Task(void *pvParameters);
 
-void PlaySongTask(void *pvParameters);
+void PlaySongTask(void *pvParameters); 
 
 // Mutex handle
 SemaphoreHandle_t MutexPotentiometer;
