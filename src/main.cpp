@@ -67,6 +67,7 @@ void TaskPlaySong(void *pvParameters);
 
 // Mutex handle
 SemaphoreHandle_t MutexPotentiometer;
+bool VCA_active = false;     // Tracks whether VCA is active
 void potentiometerTask(void *pvParameters);
 /* ***************** END DEFINE TASK FUNCTION ********************* */
 
@@ -91,6 +92,42 @@ int8_t processVCF(int8_t input)
   return output;
 }
 
+float processVCA(float vcaPeriod)
+{
+    static uint32_t startTime = 0;  // Tracks when the VCA envelope starts
+    float scaleFactor = 1.0;        // Amplitude scaling factor
+
+    // Check if the envelope should start
+    if (!VCA_active)
+    {
+        startTime = millis(); // Start tracking time
+    }
+    if(VCA_active)
+    {// Calculate elapsed time since the envelope started
+        uint32_t elapsedTime = millis() - startTime;
+
+        // Determine if we're still within the VCA period
+        if (elapsedTime < (uint32_t)(vcaPeriod * 1000)) // vcaPeriod in seconds, convert to ms
+        {
+            // Compute the scaling factor based on elapsed time
+            scaleFactor = 1.0 - ((float)elapsedTime / (vcaPeriod * 1000));
+        }
+        else
+        {
+            // Envelope is complete; stop the sound
+            scaleFactor = 0.0;
+            setNoteHz(0.0);
+            VCA_active = false; // Reset for the next sound event
+        }
+    }
+    else
+    {
+        scaleFactor = 1.0;
+    }
+
+    return scaleFactor;
+}
+
 int8_t nextSample()
 {
     // VCO
@@ -99,8 +136,13 @@ int8_t nextSample()
     // VCF (activated)
     int8_t vcf = processVCF(vco);
 
-    // VCA (disabled)   
-    int8_t vca = vcf; //PIN_RV2
+    // VCA (activated)   
+    float scaleFactor = processVCA(vcaPeriod);
+    // Scale the VCF output using the computed amplitude scaling factor
+    int16_t scaledVCA = vcf * scaleFactor;
+    // Clamp the output to int8_t range (-128 to 127)
+    int8_t vca = (scaledVCA > 127) ? 127 : (scaledVCA < -128 ? -128 : scaledVCA);
+
 
     int8_t output = vca;
 
@@ -147,13 +189,13 @@ void setup()
         ,  NULL );
     
 /*------------------------- SONG SETUP -------------------------*/   
-    xTaskCreate(
+    /*xTaskCreate(
     TaskPlaySong
     ,  "Setting_Notes_To_Play"   // A name just for humans
     ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
     ,  NULL
     ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-    ,  NULL );
+    ,  NULL );*/
 
 /*------------------------- BUTTON SETUP -------------------------*/
     xTaskCreate(
@@ -230,10 +272,10 @@ void TaskPlaySong(void *pvParameters)
     // Incrément en fonction de la grandeur du array
     for(int i=0; i<arraySize ;i++)
     {
-      Serial.print("Iteration: ");
-      Serial.print(i);
-      Serial.print("Setting note: ");
-      Serial.println(song[i].freq);
+      //Serial.print("Iteration: ");
+      //Serial.print(i);
+      //Serial.print("Setting note: ");
+      //Serial.println(song[i].freq);
       setNoteHz(song[i].freq);
       //Delais avant prochaine note
       vTaskDelay( (song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
@@ -290,7 +332,7 @@ void ButtonSW1Task(void *pvParameters)
     for (;;)
     {
         // Wait for the notification (button press)
-        setNoteHz(0.0);
+        //setNoteHz(0.0);
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         while(digitalRead(PIN_SW1) == HIGH)
         {
@@ -298,6 +340,8 @@ void ButtonSW1Task(void *pvParameters)
             //Add debounce delay
             vTaskDelay(16/portTICK_PERIOD_MS);
         }
+        //falling edge here
+        VCA_active = true;
 
         //Serial.println("SW1 has been pressed!");
     }
@@ -330,15 +374,15 @@ void potentiometerTask(void *pvParameters)
         if (xSemaphoreTake(MutexPotentiometer, portMAX_DELAY) == pdTRUE)
         {
             //data aquisition
-            f = (analogRead(PIN_RV3)/1024.0)*3.14;  //0 à pi
-            Serial.print("f: ");
-            Serial.println(f);
-            q = (analogRead(PIN_RV4)/1024.0)*1.0;   //0 à 1
-            Serial.print("q: ");
-            Serial.println(q);
+            f = (analogRead(PIN_RV3)/1024.0)*3.1;  //0 à presque pi
+            //Serial.print("f: ");
+            //Serial.println(f);
+            q = (analogRead(PIN_RV4)/1024.0)*0.9;   //0 à presque 1
+            //Serial.print("q: ");
+            //Serial.println(q);
             vcaPeriod = (analogRead(PIN_RV2)/1024.0)*3.0; //0 à 3
-            Serial.print("vca: ");
-            Serial.println(vcaPeriod);
+            //Serial.print("vca: ");
+            //Serial.println(vcaPeriod);
             float tempo = (analogRead(PIN_RV1)/1024.0);
 
             // a little bit of math
