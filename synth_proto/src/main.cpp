@@ -3,8 +3,7 @@
 #include <Oscil.h>
 #include <tables/saw2048_int8.h>
 #include <tables/square_no_alias_2048_int8.h>
-#include "song.hpp"
-#include <semphr.h>
+
 #include "pcm_audio.hpp"
 
 /*
@@ -25,18 +24,16 @@ using SquareWv = Oscil<SQUARE_NO_ALIAS_2048_NUM_CELLS, SAMPLE_RATE>;
 
 #define PIN_SW1 2
 #define PIN_SW2 3
-
-#define PIN_RV1 A0  //Tempo
-#define PIN_RV2 A1  //durée VCA 0 à 3 sec
-#define PIN_RV3 A2  //fréquence de coupure 0 à pi
-#define PIN_RV4 A3  //fréquence de resonance 0 à 1
+#define PIN_RV1 A0
+#define PIN_RV2 A1
+#define PIN_RV3 A2
+#define PIN_RV4 A3 
 
 SquareWv squarewv_;
 Sawtooth sawtooth_;
 
 float f = 1.0; //fréquence de coupure PIN_RV3
 float q = 0.5; //fréquence de résonnance PIN_RV4
-float vcaPeriod = 1.0; // 0 à 3
 float fb = (q + (q/(1.0-f)));
 int16_t b1 = f*f * 256;
 int16_t a1 = (2-2*f+f*fb-f*f*fb) * 256;
@@ -62,12 +59,6 @@ void TaskBufferManip(void *pvParameters);
 
 void ButtonSW1Task(void *pvParameters);
 void ButtonSW2Task(void *pvParameters);
-
-void TaskPlaySong(void *pvParameters);
-
-// Mutex handle
-SemaphoreHandle_t MutexPotentiometer;
-void potentiometerTask(void *pvParameters);
 /* ***************** END DEFINE TASK FUNCTION ********************* */
 
 void setNoteHz(float note)
@@ -114,28 +105,20 @@ void setup()
     pinMode(PIN_SW2, INPUT); //Push button SW2
 
     pinMode(PIN_RV1, INPUT); //tempo
-    pinMode(PIN_RV2, INPUT); //durée VCA
-    pinMode(PIN_RV3, INPUT); //fréquence coupure
-    pinMode(PIN_RV4, INPUT); //fréquence resonance
+    pinMode(PIN_RV2, INPUT); //durée VCA 0 à 3
+    pinMode(PIN_RV3, INPUT); //fréquence coupure 0 à pi
+    pinMode(PIN_RV4, INPUT); //fréquence resonance 0 à 1
     
     Serial.begin(9600);
 
     // Oscillator.
     squarewv_ = SquareWv(SQUARE_NO_ALIAS_2048_DATA);
     sawtooth_ = SquareWv(SAW2048_DATA);
-    // setNoteHz(440.0); for test
+    setNoteHz(440.0);
 
     pcmSetup();
 
     Serial.println("Synth prototype ready");
-    
-/*------------------MUTEX-----------------------*/
-    // Create the mutex
-    MutexPotentiometer = xSemaphoreCreateMutex();
-    if (MutexPotentiometer == NULL) {
-        Serial.println("Failed to create mutex!");
-        while (1); // Stay here if mutex creation failed
-    }
 
 /*------------------------- MUSIC BUFFER SETUP -------------------------*/
     xTaskCreate(
@@ -143,17 +126,8 @@ void setup()
         ,  "Music buffer manipulation" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  0  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  NULL );
-    
-/*------------------------- SONG SETUP -------------------------*/   
-    xTaskCreate(
-    TaskPlaySong
-    ,  "Setting_Notes_To_Play"   // A name just for humans
-    ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
-    ,  NULL
-    ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-    ,  NULL );
 
 /*------------------------- BUTTON SETUP -------------------------*/
     xTaskCreate(
@@ -175,15 +149,6 @@ void setup()
     // Attach the ISR to SW2
     attachInterrupt(digitalPinToInterrupt(PIN_SW2), toggleVarSW2, FALLING);
 
-/*------------------------- POTENTIOMETER SETUP -------------------------*/
-    xTaskCreate(
-        potentiometerTask
-        ,  "Gestion potentiomètres et un peu de math" 
-        ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
-        ,  NULL//pas de param envoyé
-        ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-        ,  NULL );
-    
     // Start the FreeRTOS scheduler
     vTaskStartScheduler();
 }
@@ -218,32 +183,6 @@ void toggleVarSW2()
 /*--------------------------------------------------*/
 /*---------------------- Tasks ---------------------*/
 /*--------------------------------------------------*/
-
-// 
-void TaskPlaySong(void *pvParameters)
-{
-  //Find array size
-  int arraySize = sizeof(song) / sizeof(song[0]);
-  Serial.println(arraySize);
-
-  while(1){
-    // Incrément en fonction de la grandeur du array
-    for(int i=0; i<arraySize ;i++)
-    {
-      Serial.print("Iteration: ");
-      Serial.print(i);
-      Serial.print("Setting note: ");
-      Serial.println(song[i].freq);
-      setNoteHz(song[i].freq);
-      //Delais avant prochaine note
-      vTaskDelay( (song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
-
-    }
-  }
-  
-
-}
-
 void TaskBlink(void *pvParameters) {
     // Cast the argument to the correct type
     TaskParams *params = (TaskParams *)pvParameters;
@@ -266,11 +205,7 @@ void TaskBufferManip(void *pvParameters) {
     {
         if(!pcmBufferFull())
         {
-            if (xSemaphoreTake(MutexPotentiometer, portMAX_DELAY) == pdTRUE)
-            {
-                pcmAddSample(nextSample());
-                xSemaphoreGive(MutexPotentiometer);
-            }
+            pcmAddSample(nextSample());
             //Serial.println("Filling up Buffer!");
         }
         else if(pcmBufferFull())
@@ -315,40 +250,5 @@ void ButtonSW2Task(void *pvParameters)
         // Optional: Add debounce delay
         vTaskDelay(pdMS_TO_TICKS(50));
         Serial.println("SW2 has been pressed!");
-    }
-}
-
-
-void potentiometerTask(void *pvParameters)
-{
-    const TickType_t xFrequency = pdMS_TO_TICKS(100); // 100 ms period aka 10Hz
-    TickType_t xLastWakeTime = xTaskGetTickCount();   // Initialize the reference time
-
-    for (;;)
-    {
-        // Request the mutex
-        if (xSemaphoreTake(MutexPotentiometer, portMAX_DELAY) == pdTRUE)
-        {
-            //data aquisition
-            f = (analogRead(PIN_RV3)/1024.0)*3.14;  //0 à pi
-            Serial.print("f: ");
-            Serial.println(f);
-            q = (analogRead(PIN_RV4)/1024.0)*1.0;   //0 à 1
-            Serial.print("q: ");
-            Serial.println(q);
-            vcaPeriod = (analogRead(PIN_RV2)/1024.0)*3.0; //0 à 3
-            Serial.print("vca: ");
-            Serial.println(vcaPeriod);
-            float tempo = (analogRead(PIN_RV1)/1024.0);
-
-            // a little bit of math
-            fb = (q + (q/(1.0-f)));
-            b1 = f*f * 256;
-            a1 = (2-2*f+f*fb-f*f*fb) * 256;
-            a2 = -(1-2*f+f*fb+f*f-f*f*fb) * 256;
-            xSemaphoreGive(MutexPotentiometer);
-            // Wait for the next cycle in 100ms
-            vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        }
     }
 }
