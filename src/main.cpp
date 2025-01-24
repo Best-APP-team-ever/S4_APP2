@@ -78,6 +78,8 @@ void potentiometerTask(void *pvParameters);
 
 void setNoteHz(float note)
 {
+    Serial.print("Note frequency playing is: ");
+    Serial.println(note);
     squarewv_.setFreq(note);
     sawtooth_.setFreq(note);
 }
@@ -142,7 +144,11 @@ int8_t nextSample()
     int8_t vcf = processVCF(vco);
 
     // VCA (activated)   
+    
     float scaleFactor = processVCA(vcaPeriod);
+    //Serial.print("Processing VCA... ");
+    //Serial.println(scaleFactor);
+
     // Scale the VCF output using the computed amplitude scaling factor
     int16_t scaledVCA = vcf * scaleFactor;
     // Clamp the output to int8_t range (-128 to 127)
@@ -165,7 +171,7 @@ void setup()
     pinMode(PIN_RV3, INPUT); //fréquence coupure
     pinMode(PIN_RV4, INPUT); //fréquence resonance
     
-    setNoteHz(0);
+    
     Serial.begin(9600);
 
     // Oscillator.
@@ -173,7 +179,7 @@ void setup()
     sawtooth_ = SquareWv(SAW2048_DATA);
 
     pcmSetup();
-
+    setNoteHz(0);
     Serial.println("Synth prototype ready");
     
 /*------------------MUTEX-----------------------*/
@@ -181,7 +187,7 @@ void setup()
     MutexPotentiometer = xSemaphoreCreateMutex();
     if (MutexPotentiometer == NULL) {
         Serial.println("Failed to create mutex!");
-        while (1); // Stay here if mutex creation failed
+        //while (1); // Stay here if mutex creation failed
     }
 
 /*------------------------- MUSIC BUFFER SETUP -------------------------*/
@@ -190,7 +196,7 @@ void setup()
         ,  "Music buffer manipulation" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  0  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  NULL );
     
 /*------------------------- SONG SETUP -------------------------*/   
@@ -199,7 +205,7 @@ void setup()
     ,  "Setting_Notes_To_Play"   // A name just for humans
     ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
     ,  NULL
-    ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+    ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  &xPlaySongTaskHandle // Notification from SW2
     );
 
@@ -228,9 +234,9 @@ void setup()
     xTaskCreate(
         potentiometerTask
         ,  "Gestion potentiomètres et un peu de math" 
-        ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
+        ,  1024  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  0  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  NULL );
     
     // Start the FreeRTOS scheduler
@@ -273,14 +279,14 @@ void PlaySongTask(void *pvParameters)
 {
     //Find array size
     int arraySize = sizeof(song) / sizeof(song[0]);
-    Serial.println(arraySize);
+    //Serial.println(arraySize);
 
     for(;;)
     {
         //Wait until notified
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        while(PIN_SW2){
+        while(digitalRead(PIN_SW2) == HIGH){
             // Incrément en fonction de la grandeur du array
             for(int i=0; i<arraySize; i++)
             {
@@ -290,11 +296,11 @@ void PlaySongTask(void *pvParameters)
 
                 Serial.print("Iteration: ");
                 Serial.print(i);
-                Serial.print("Setting note: ");
+                Serial.print(" Setting note: ");
                 Serial.println(song[i].freq);
                 setNoteHz(song[i].freq);
                 //Delais avant prochaine note
-                vTaskDelay( (song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
+                vTaskDelay((song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
 
             }
         }
@@ -349,7 +355,7 @@ void NoButtonPressedTask(void *pvParameters){
         {
             setNoteHz(0);
         }
-
+        vTaskDelay(64/portTICK_PERIOD_MS);
     }
 
 }
@@ -363,6 +369,7 @@ void ButtonSW1Task(void *pvParameters)
         while(digitalRead(PIN_SW1) == HIGH)
         {
             setNoteHz(440.0);
+            //Serial.println("Presently 'SW1' is pressed, setting note to '440.0'Hz. Delay of '16'ms...");
             //Add debounce delay
             vTaskDelay(16/portTICK_PERIOD_MS);
         }
@@ -384,15 +391,16 @@ void ButtonSW2Task(void *pvParameters)
         while(digitalRead(PIN_SW2) == HIGH)
         {
             //Notify the play song Task
+            //Serial.println("Presently 'SW2' is pressed, playing song. Delay of '16'ms...");
             xTaskNotifyGive(xPlaySongTaskHandle);
-        }
-            
+            vTaskDelay(16/portTICK_PERIOD_MS);
+        }  
         //Stop song
         //falling edge here
         VCA_active = true;
 
         // Debounce delay
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(16/portTICK_PERIOD_MS);
     }
 }
 
@@ -407,6 +415,7 @@ void potentiometerTask(void *pvParameters)
         // Request the mutex
         if (xSemaphoreTake(MutexPotentiometer, portMAX_DELAY) == pdTRUE)
         {
+            //Serial.println("Presently reading all potentiometers. Delay of'100'ms...");
             //data aquisition
             f = (analogRead(PIN_RV3)/1024.0)*3.1;  //0 à presque pi
             //Serial.print("f: ");
