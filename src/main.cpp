@@ -300,7 +300,7 @@ void PlaySongTask(void *pvParameters)
                 Serial.println(song[i].freq);
                 setNoteHz(song[i].freq);
                 //Delais avant prochaine note
-                vTaskDelay((song[i].duration * TEMPO_16T_MS) / portTICK_PERIOD_MS ); 
+                vTaskDelay((song[i].duration * TEMPO_16T_MS(tempo)) / portTICK_PERIOD_MS ); 
 
             }
         }
@@ -426,7 +426,7 @@ void potentiometerTask(void *pvParameters)
             vcaPeriod = (analogRead(PIN_RV2)/1024.0)*3.0; //0 à 3
             //Serial.print("vca: ");
             //Serial.println(vcaPeriod);
-            float tempo = (analogRead(PIN_RV1)/1024.0);
+            tempo = ((analogRead(PIN_RV1)/1024)*180)+60;
 
             // a little bit of math
             fb = (q + (q/(1.0-f)));
