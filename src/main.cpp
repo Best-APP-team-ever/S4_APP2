@@ -371,7 +371,7 @@ void ButtonSW1Task(void *pvParameters)
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         while(digitalRead(PIN_SW1) == HIGH)
         {
-            setNoteHz(440.0);
+            setNoteHz(750.0);
             //Serial.println("Presently 'SW1' is pressed, setting note to '440.0'Hz. Delay of '16'ms...");
             //Add debounce delay
             vTaskDelay(16/portTICK_PERIOD_MS);
