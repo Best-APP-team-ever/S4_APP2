@@ -6,7 +6,7 @@
 //Varaible global
 int tempo;
 // Length of a 1/16 note in ms:
-#define TEMPO_16T_MS    ((60*250)/TEMPO_BPM)
+#define TEMPO_16T_MS(t)    ((60*250)/t)
 
 // Note definition
 // 
