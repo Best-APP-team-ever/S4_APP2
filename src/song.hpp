@@ -2,7 +2,9 @@
 #define SONG_HPP
 
 // Tempo in beats-per-minute:
-#define TEMPO_BPM       120
+// #define TEMPO_BPM       120
+//Varaible global
+int tempo;
 // Length of a 1/16 note in ms:
 #define TEMPO_16T_MS    ((60*250)/TEMPO_BPM)
 
