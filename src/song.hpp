@@ -4,7 +4,7 @@
 // Tempo in beats-per-minute:
 // #define TEMPO_BPM       120
 //Varaible global
-int tempo;
+float tempo;
 // Length of a 1/16 note in ms:
 #define TEMPO_16T_MS(t)    ((60*250)/t)
 
