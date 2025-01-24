@@ -78,7 +78,7 @@ struct Note
 //     {146.83, 4},     // D3
 // };
 
-int facteur_amp = 2;
+int facteur_amp = 4;
 Note song[] = {
     {130.81 * facteur_amp, 4},     // C3
     {196.00 * facteur_amp, 4},     // G3

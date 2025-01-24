@@ -78,8 +78,8 @@ void potentiometerTask(void *pvParameters);
 
 void setNoteHz(float note)
 {
-    Serial.print("Note frequency playing is: ");
-    Serial.println(note);
+    //Serial.print("Note frequency playing is: ");
+    //Serial.println(note);
     squarewv_.setFreq(note);
     sawtooth_.setFreq(note);
 }
@@ -294,15 +294,15 @@ void PlaySongTask(void *pvParameters)
                     break;
                 }
 
-                Serial.print("Iteration: ");
-                Serial.print(i);
-                Serial.print(" Setting note: ");
-                Serial.println(song[i].freq);
+                // Serial.print("Iteration: ");
+                // Serial.print(i);
+                // Serial.print(" Setting note: ");
+                // Serial.println(song[i].freq);
                 setNoteHz(song[i].freq);
                 //Delais avant prochaine note
-                Serial.print("Tempo is: ");
-                Serial.println(tempo);
-                Serial.println((song[i].duration * TEMPO_16T_MS(tempo)) / portTICK_PERIOD_MS);
+                // Serial.print("Tempo is: ");
+                // Serial.println(tempo);
+                // Serial.println((song[i].duration * TEMPO_16T_MS(tempo)) / portTICK_PERIOD_MS);
                 vTaskDelay((song[i].duration * TEMPO_16T_MS(tempo)) / portTICK_PERIOD_MS ); 
 
             }
