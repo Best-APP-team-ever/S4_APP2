@@ -78,43 +78,44 @@ struct Note
 //     {146.83, 4},     // D3
 // };
 
-int facteur_amp = 4;
+int facteur_amp_freq = 4;
+int facteur_duration = 2;
 Note song[] = {
-    {130.81 * facteur_amp, 4},     // C3
-    {196.00 * facteur_amp, 4},     // G3
-    {196.00 * facteur_amp, 4},     // G3
-    {220.00 * facteur_amp, 4},     // A3
-    {196.00 * facteur_amp, 4},     // G3
-    {174.61 * facteur_amp, 4},     // F3
-    {164.81 * facteur_amp, 4},     // E3
-    {146.83 * facteur_amp, 4},     // D3
-    {130.81 * facteur_amp, 4},     // C3
-    {196.00 * facteur_amp, 4},     // G3
-    {174.61 * facteur_amp, 4},     // F3
-    {164.81 * facteur_amp, 4},     // E3
-    {146.83 * facteur_amp, 4},     // D3
-    {130.81 * facteur_amp, 4},     // C3
-    {196.00 * facteur_amp, 4},     // G3
-    {174.61 * facteur_amp, 4},     // F3
-    {164.81 * facteur_amp, 4},     // E3
-    {146.83 * facteur_amp, 4},     // D3
-    {130.81 * facteur_amp, 4},     // C3
-    {220.00 * facteur_amp, 4},     // A3
-    {196.00 * facteur_amp, 4},     // G3
-    {174.61 * facteur_amp, 4},     // F3
-    {164.81 * facteur_amp, 4},     // E3
-    {146.83 * facteur_amp, 4},     // D3
-    {130.81 * facteur_amp, 4},     // C3
-    {196.00 * facteur_amp, 4},     // G3
-    {174.61 * facteur_amp, 4},     // F3
-    {164.81 * facteur_amp, 4},     // E3
-    {146.83 * facteur_amp, 4},     // D3
-    {130.81 * facteur_amp, 4},     // C3
-    {220.00 * facteur_amp, 4},     // A3
-    {196.00 * facteur_amp, 4},     // G3
-    {174.61 * facteur_amp, 4},     // F3
-    {164.81 * facteur_amp, 4},     // E3
-    {146.83 * facteur_amp, 4},     // D3
+    {130.81 * facteur_amp_freq, facteur_duration},     // C3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {220.00 * facteur_amp_freq, facteur_duration},     // A3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {174.61 * facteur_amp_freq, facteur_duration},     // F3
+    {164.81 * facteur_amp_freq, facteur_duration},     // E3
+    {146.83 * facteur_amp_freq, facteur_duration},     // D3
+    {130.81 * facteur_amp_freq, facteur_duration},     // C3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {174.61 * facteur_amp_freq, facteur_duration},     // F3
+    {164.81 * facteur_amp_freq, facteur_duration},     // E3
+    {146.83 * facteur_amp_freq, facteur_duration},     // D3
+    {130.81 * facteur_amp_freq, facteur_duration},     // C3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {174.61 * facteur_amp_freq, facteur_duration},     // F3
+    {164.81 * facteur_amp_freq, facteur_duration},     // E3
+    {146.83 * facteur_amp_freq, facteur_duration},     // D3
+    {130.81 * facteur_amp_freq, facteur_duration},     // C3
+    {220.00 * facteur_amp_freq, facteur_duration},     // A3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {174.61 * facteur_amp_freq, facteur_duration},     // F3
+    {164.81 * facteur_amp_freq, facteur_duration},     // E3
+    {146.83 * facteur_amp_freq, facteur_duration},     // D3
+    {130.81 * facteur_amp_freq, facteur_duration},     // C3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {174.61 * facteur_amp_freq, facteur_duration},     // F3
+    {164.81 * facteur_amp_freq, facteur_duration},     // E3
+    {146.83 * facteur_amp_freq, facteur_duration},     // D3
+    {130.81 * facteur_amp_freq, facteur_duration},     // C3
+    {220.00 * facteur_amp_freq, facteur_duration},     // A3
+    {196.00 * facteur_amp_freq, facteur_duration},     // G3
+    {174.61 * facteur_amp_freq, facteur_duration},     // F3
+    {164.81 * facteur_amp_freq, facteur_duration},     // E3
+    {146.83 * facteur_amp_freq, facteur_duration},     // D3
 };
 
 // Note frequency reference
