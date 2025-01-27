@@ -196,7 +196,7 @@ void setup()
         ,  "Music buffer manipulation" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  0  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  NULL );
     
 /*------------------------- SONG SETUP -------------------------*/   
@@ -205,7 +205,7 @@ void setup()
     ,  "Setting_Notes_To_Play"   // A name just for humans
     ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
     ,  NULL
-    ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+    ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
     ,  &xPlaySongTaskHandle // Notification from SW2
     );
 
@@ -215,14 +215,14 @@ void setup()
         ,  "Gestion bouton SW1" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  &xButtonSW1TaskHandle );
     xTaskCreate(
         ButtonSW2Task
         ,  "Gestion bouton SW2" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  2  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  &xButtonSW2TaskHandle );
     // Attach the ISR to SW1
     attachInterrupt(digitalPinToInterrupt(PIN_SW1), toggleVarSW1, RISING);
