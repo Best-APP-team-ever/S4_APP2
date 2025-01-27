@@ -196,7 +196,7 @@ void setup()
         ,  "Music buffer manipulation" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  NULL );
     
 /*------------------------- SONG SETUP -------------------------*/   
@@ -215,14 +215,14 @@ void setup()
         ,  "Gestion bouton SW1" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  &xButtonSW1TaskHandle );
     xTaskCreate(
         ButtonSW2Task
         ,  "Gestion bouton SW2" 
         ,  128  // This stack size can be checked & adjusted by reading the Stack Highwater
         ,  NULL//pas de param envoyé
-        ,  3  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+        ,  1  // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
         ,  &xButtonSW2TaskHandle );
     // Attach the ISR to SW1
     attachInterrupt(digitalPinToInterrupt(PIN_SW1), toggleVarSW1, RISING);
@@ -330,7 +330,11 @@ void TaskBufferManip(void *pvParameters) {
     //TaskParams *params = (TaskParams *)pvParameters;    
     while (1) 
     {
-        if(!pcmBufferFull())
+        if(pcmBufferEmpty())
+        {
+            Serial.println("Buffer is empty!"); //gestion à faire plus tard
+        }
+        while(!pcmBufferFull())
         {
             if (xSemaphoreTake(MutexPotentiometer, portMAX_DELAY) == pdTRUE)
             {
@@ -339,15 +343,12 @@ void TaskBufferManip(void *pvParameters) {
             }
             //Serial.println("Filling up Buffer!");
         }
-        else if(pcmBufferFull())
+        if(pcmBufferFull())
         {
-            vTaskDelay(32/portTICK_PERIOD_MS);
+            vTaskDelay(16/portTICK_PERIOD_MS);
             //Serial.println("Buffer is full!");
         }
-        else if(pcmBufferEmpty())
-        {
-            Serial.println("Buffer is empty!"); //gestion à faire plus tard
-        }
+        
     }
 }
 
@@ -374,6 +375,7 @@ void ButtonSW1Task(void *pvParameters)
             setNoteHz(750.0);
             //Serial.println("Presently 'SW1' is pressed, setting note to '440.0'Hz. Delay of '16'ms...");
             //Add debounce delay
+            taskYIELD();
             vTaskDelay(16/portTICK_PERIOD_MS);
         }
         //falling edge here
@@ -396,6 +398,7 @@ void ButtonSW2Task(void *pvParameters)
             //Notify the play song Task
             //Serial.println("Presently 'SW2' is pressed, playing song. Delay of '16'ms...");
             xTaskNotifyGive(xPlaySongTaskHandle);
+            taskYIELD();
             vTaskDelay(16/portTICK_PERIOD_MS);
         }  
         //Stop song
@@ -436,6 +439,7 @@ void potentiometerTask(void *pvParameters)
             b1 = f*f * 256;
             a1 = (2-2*f+f*fb-f*f*fb) * 256;
             a2 = -(1-2*f+f*fb+f*f-f*f*fb) * 256;
+            taskYIELD();
             xSemaphoreGive(MutexPotentiometer);
             // Wait for the next cycle in 100ms
             vTaskDelayUntil(&xLastWakeTime, xFrequency);
