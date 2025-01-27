@@ -53,29 +53,35 @@ TaskHandle_t xPlaySongTaskHandle = NULL;
 void toggleVarSW1();
 void toggleVarSW2();
 
-/* ******************* DEFINE TASK FUNCTION *********************** */
+/* ******************* DEFINE TASK FUNCTIONS *********************** */
 // Define a structure to hold the task parameters
 typedef struct {
     uint8_t pin;
     uint32_t frequency; // Frequency in Hz
 } TaskParams;
 
+// Task pour le laboratoire & unused
 void TaskBlink( void *pvParameters );
+void NoButtonPressedTask(void *pvParameters);
 
+// Task pour le remplissage du buffer
 void TaskBufferManip(void *pvParameters);
 
-void NoButtonPressedTask(void *pvParameters);
+// Task de gestion des boutons 
 void ButtonSW1Task(void *pvParameters);
 void ButtonSW2Task(void *pvParameters);
+void potentiometerTask(void *pvParameters);
 
+// Task qui set les notes de la chanson
 void PlaySongTask(void *pvParameters); 
 
 // Mutex handle
 SemaphoreHandle_t MutexPotentiometer;
 bool VCA_active = false;     // Tracks whether VCA is active
-void potentiometerTask(void *pvParameters);
+
 /* ***************** END DEFINE TASK FUNCTION ********************* */
 
+// Fonction pour set une note
 void setNoteHz(float note)
 {
     //Serial.print("Note frequency playing is: ");
@@ -84,6 +90,7 @@ void setNoteHz(float note)
     sawtooth_.setFreq(note);
 }
 
+// Fonction du VCF
 int8_t processVCF(int8_t input)
 {
   static int8_t y1 = 0;
@@ -99,6 +106,7 @@ int8_t processVCF(int8_t input)
   return output;
 }
 
+// Fonction du VCA
 float processVCA(float vcaPeriod)
 {
     static uint32_t startTime = 0;  // Tracks when the VCA envelope starts
@@ -109,6 +117,7 @@ float processVCA(float vcaPeriod)
     {
         startTime = millis(); // Start tracking time
     }
+    
     if(VCA_active)
     {// Calculate elapsed time since the envelope started
         uint32_t elapsedTime = millis() - startTime;
