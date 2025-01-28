@@ -316,7 +316,7 @@ void potentiometerTask(void *pvParameters)
 
     for (;;)
     {
-        // Request the mutex
+        // Request the mutex for writing values
         if (xSemaphoreTake(MutexPotentiometer, portMAX_DELAY) == pdTRUE)
         {
             //Serial.println("Presently reading all potentiometers. Delay of'100'ms...");
